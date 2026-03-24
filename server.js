@@ -5,7 +5,7 @@ const path = require('path');
 const { getDb, prepare, saveDb } = require('./db');
 
 const app = express();
-const PORT = 3000;
+const PORT = 9192;
 const JWT_SECRET = 'xiulian_secret_key_2024';
 
 app.use(express.json());
