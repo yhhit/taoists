@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>修炼记录系统</title>
+  <meta name="description" content="每日打坐、作息、凡俗心追踪 - 修炼记录系统">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ========== Auth Screen ========== -->
+  <div id="auth-screen" class="screen active">
+    <div class="auth-container">
+      <div class="auth-logo">
+        <div class="logo-icon">🧘</div>
+        <h1>修炼记录</h1>
+        <p class="subtitle">精进修行 · 如实观照</p>
+      </div>
+      <div class="auth-form glass-card">
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="login">登录</button>
+          <button class="auth-tab" data-tab="register">注册</button>
+        </div>
+        <form id="login-form" class="auth-form-inner active">
+          <div class="input-group">
+            <input type="text" id="login-username" placeholder="用户名" required>
+          </div>
+          <div class="input-group">
+            <input type="password" id="login-password" placeholder="密码" required>
+          </div>
+          <button type="submit" class="btn-primary">登 录</button>
+        </form>
+        <form id="register-form" class="auth-form-inner">
+          <div class="input-group">
+            <input type="text" id="reg-username" placeholder="用户名" required>
+          </div>
+          <div class="input-group">
+            <input type="password" id="reg-password" placeholder="密码（至少3个字符）" required minlength="3">
+          </div>
+          <button type="submit" class="btn-primary">注 册</button>
+        </form>
+        <div id="auth-error" class="error-msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Main App ========== -->
+  <div id="app-screen" class="screen">
+    <!-- Header -->
+    <header class="app-header glass-card">
+      <div class="header-left">
+        <span class="greeting" id="greeting-text">修炼日记</span>
+      </div>
+      <div class="header-right">
+        <span class="user-badge" id="user-badge"></span>
+        <button class="btn-icon" id="btn-logout" title="退出">⏻</button>
+      </div>
+    </header>
+
+    <!-- Warning Banner -->
+    <div id="warning-banner" class="warning-banner" style="display:none;">
+      <div class="warning-content">
+        <span class="warning-icon">⚠️</span>
+        <span id="warning-text"></span>
+        <button class="warning-close" id="warning-close">×</button>
+      </div>
+    </div>
+
+    <!-- Page Container -->
+    <main id="page-container" class="page-container">
+
+      <!-- HOME PAGE -->
+      <div id="page-home" class="page active">
+        <div class="date-nav">
+          <button class="btn-icon" id="date-prev">◀</button>
+          <span class="current-date" id="current-date"></span>
+          <button class="btn-icon" id="date-next">▶</button>
+        </div>
+
+        <div class="score-overview glass-card">
+          <div class="score-top">
+            <div class="score-ring">
+              <svg viewBox="0 0 120 120" class="score-svg">
+                <defs>
+                  <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#7c6cf0"/>
+                    <stop offset="100%" style="stop-color:#a594ff"/>
+                  </linearGradient>
+                </defs>
+                <circle cx="60" cy="60" r="52" class="score-bg-ring"/>
+                <circle cx="60" cy="60" r="52" class="score-fg-ring" id="score-ring-fg" stroke="url(#scoreGradient)"/>
+              </svg>
+              <div class="score-center">
+                <span class="score-number" id="total-score">0</span>
+                <span class="score-label">总分</span>
+              </div>
+            </div>
+            <div class="score-summary" id="score-summary">
+              今日暂无记录
+            </div>
+          </div>
+          <div class="score-details">
+            <div class="score-item">
+              <span class="score-item-icon">🧘</span>
+              <div class="score-item-info">
+                <span class="score-item-name">打坐</span>
+                <span class="score-item-value" id="med-score">0/50</span>
+              </div>
+            </div>
+            <div class="score-item">
+              <span class="score-item-icon">☀️</span>
+              <div class="score-item-info">
+                <span class="score-item-name">起床</span>
+                <span class="score-item-value" id="wake-score">0/25</span>
+              </div>
+            </div>
+            <div class="score-item">
+              <span class="score-item-icon">🌙</span>
+              <div class="score-item-info">
+                <span class="score-item-name">睡觉</span>
+                <span class="score-item-value" id="sleep-score">0/25</span>
+              </div>
+            </div>
+            <div class="score-item">
+              <span class="score-item-icon">💭</span>
+              <div class="score-item-info">
+                <span class="score-item-name">凡俗心</span>
+                <span class="score-item-value" id="thought-count">0次</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="quick-actions">
+          <button class="action-card glass-card" onclick="switchPage('meditation')">
+            <span class="action-icon">🧘</span>
+            <span class="action-text">记录打坐</span>
+          </button>
+          <button class="action-card glass-card" onclick="switchPage('thoughts')">
+            <span class="action-icon">💭</span>
+            <span class="action-text">觉察凡心</span>
+          </button>
+          <button class="action-card glass-card" onclick="switchPage('schedule')">
+            <span class="action-icon">⏰</span>
+            <span class="action-text">记录作息</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- MEDITATION PAGE -->
+      <div id="page-meditation" class="page">
+        <h2 class="page-title">🧘 打坐记录</h2>
+        <div class="form-card glass-card">
+          <div class="input-group">
+            <label>日期</label>
+            <input type="date" id="med-date">
+          </div>
+          <div class="input-group">
+            <label>时长（分钟）</label>
+            <input type="number" id="med-duration" min="1" max="360" placeholder="请输入打坐分钟数">
+          </div>
+          <div class="input-group">
+            <label>备注（可选）</label>
+            <textarea id="med-notes" rows="2" placeholder="打坐体验、感受..."></textarea>
+          </div>
+          <button class="btn-primary" id="btn-add-med">添加记录</button>
+        </div>
+        <div class="records-list" id="med-list"></div>
+      </div>
+
+      <!-- THOUGHTS PAGE -->
+      <div id="page-thoughts" class="page">
+        <h2 class="page-title">💭 凡俗心记录</h2>
+        <div class="form-card glass-card">
+          <div class="input-group">
+            <label>日期</label>
+            <input type="date" id="thought-date">
+          </div>
+          <div class="input-group">
+            <label>产生原因</label>
+            <input type="text" id="thought-cause" placeholder="什么触发了这个念头？">
+          </div>
+          <div class="input-group">
+            <label>内容</label>
+            <textarea id="thought-content" rows="3" placeholder="凡俗心的具体内容..."></textarea>
+          </div>
+          <div class="input-group">
+            <label>产生轨迹</label>
+            <textarea id="thought-trajectory" rows="3" placeholder="念头是如何从起因发展到现在的？如实记录心念的变化过程..."></textarea>
+          </div>
+          <button class="btn-primary" id="btn-add-thought">添加记录</button>
+        </div>
+        <div class="records-list" id="thought-list"></div>
+      </div>
+
+      <!-- SCHEDULE PAGE -->
+      <div id="page-schedule" class="page">
+        <h2 class="page-title">⏰ 作息记录</h2>
+        <div class="form-card glass-card">
+          <div class="input-group">
+            <label>日期</label>
+            <input type="date" id="sched-date">
+          </div>
+          <div class="input-row">
+            <div class="input-group flex-1">
+              <label>☀️ 起床时间</label>
+              <input type="time" id="sched-wake">
+            </div>
+            <div class="input-group flex-1">
+              <label>🌙 睡觉时间</label>
+              <input type="time" id="sched-sleep">
+            </div>
+          </div>
+          <div id="wake-remark-group" class="input-group" style="display:none;">
+            <label>⚠️ 起床超时备注（必填）</label>
+            <textarea id="sched-wake-remark" rows="2" placeholder="请说明迟起原因..."></textarea>
+          </div>
+          <div id="sleep-remark-group" class="input-group" style="display:none;">
+            <label>⚠️ 睡觉超时备注（必填）</label>
+            <textarea id="sched-sleep-remark" rows="2" placeholder="请说明晚睡原因..."></textarea>
+          </div>
+          <button class="btn-primary" id="btn-add-sched">保存作息</button>
+        </div>
+        <div class="records-list" id="sched-list"></div>
+      </div>
+
+      <!-- LEADERBOARD PAGE -->
+      <div id="page-leaderboard" class="page">
+        <h2 class="page-title">🏆 排行榜</h2>
+        <div class="leaderboard-tabs">
+          <button class="lb-tab active" data-range="day">日榜</button>
+          <button class="lb-tab" data-range="week">周榜</button>
+          <button class="lb-tab" data-range="month">月榜</button>
+          <button class="lb-tab" data-range="halfyear">半年榜</button>
+        </div>
+        <div class="leaderboard-list glass-card" id="lb-list"></div>
+      </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav glass-card">
+      <button class="nav-item active" data-page="home">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">首页</span>
+      </button>
+      <button class="nav-item" data-page="meditation">
+        <span class="nav-icon">🧘</span>
+        <span class="nav-label">打坐</span>
+      </button>
+      <button class="nav-item" data-page="thoughts">
+        <span class="nav-icon">💭</span>
+        <span class="nav-label">凡心</span>
+      </button>
+      <button class="nav-item" data-page="schedule">
+        <span class="nav-icon">⏰</span>
+        <span class="nav-label">作息</span>
+      </button>
+      <button class="nav-item" data-page="leaderboard">
+        <span class="nav-icon">🏆</span>
+        <span class="nav-label">排行</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ========== Remark Modal ========== -->
+  <div id="remark-modal" class="modal" style="display:none;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content glass-card">
+      <h3 id="remark-modal-title">⚠️ 需要填写备注</h3>
+      <p id="remark-modal-msg"></p>
+      <textarea id="remark-modal-input" rows="3" placeholder="请填写原因..."></textarea>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="remark-modal-cancel">取消</button>
+        <button class="btn-primary" id="remark-modal-confirm">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Toast ========== -->
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
