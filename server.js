@@ -300,6 +300,72 @@ app.get('/api/leaderboard', authMiddleware, (req, res) => {
   res.json(leaderboard);
 });
 
+// ============== User Detail ==============
+app.get('/api/user-detail', authMiddleware, (req, res) => {
+  const { username, range } = req.query;
+  const today = req.query.date || new Date(new Date().getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  if (!username) return res.status(400).json({ error: '用户名不能为空' });
+
+  const user = prepare('SELECT id, username FROM users WHERE username = ?').get(username);
+  if (!user) return res.status(404).json({ error: '用户不存在' });
+
+  let startDate, endDate;
+  endDate = today;
+
+  switch (range) {
+    case 'week': {
+      const d = new Date(today);
+      const day = d.getDay() || 7;
+      d.setDate(d.getDate() - day + 1);
+      startDate = d.toISOString().slice(0, 10);
+      break;
+    }
+    case 'month': {
+      startDate = today.slice(0, 7) + '-01';
+      break;
+    }
+    case 'halfyear': {
+      const d = new Date(today);
+      d.setMonth(d.getMonth() - 6);
+      startDate = d.toISOString().slice(0, 10);
+      break;
+    }
+    default:
+      startDate = today;
+  }
+
+  const dates = [];
+  const d = new Date(startDate);
+  const end = new Date(endDate);
+  while (d <= end) {
+    dates.push(d.toISOString().slice(0, 10));
+    d.setDate(d.getDate() + 1);
+  }
+
+  const dailyDetails = dates.map(date => {
+    const score = getDailyScore(user.id, date);
+    // Get schedule remarks
+    const schedule = prepare('SELECT wake_remark, sleep_remark FROM schedules WHERE user_id = ? AND date = ?').get(user.id, date);
+    return {
+      ...score,
+      wakeRemark: schedule?.wake_remark || null,
+      sleepRemark: schedule?.sleep_remark || null
+    };
+  });
+
+  // Filter out days with zero activity (no score and no records)
+  const activeDays = dailyDetails.filter(d => d.totalScore > 0 || d.meditationMinutes > 0 || d.thoughtCount > 0);
+
+  res.json({
+    username: user.username,
+    range,
+    startDate,
+    endDate,
+    days: activeDays.reverse() // Most recent first
+  });
+});
+
 // ============== Warning Check ==============
 app.get('/api/warnings', authMiddleware, (req, res) => {
   const today = req.query.date || new Date(new Date().getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);

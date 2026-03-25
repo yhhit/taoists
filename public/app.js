@@ -531,7 +531,7 @@ async function loadLeaderboard(range) {
       const medals = ['🥇', '🥈', '🥉'];
       const rankDisplay = i < 3 ? medals[i] : (i + 1);
       return `
-        <div class="lb-item">
+        <div class="lb-item" onclick="showUserDetail('${escHtml(item.username)}')">
           <div class="lb-rank ${rankClass}">${rankDisplay}</div>
           <div class="lb-info">
             <div class="lb-name">${escHtml(item.username)}</div>
@@ -547,6 +547,72 @@ async function loadLeaderboard(range) {
   } catch (err) {
     // Ignore
   }
+}
+
+async function showUserDetail(uname) {
+  const modal = document.getElementById('user-detail-modal');
+  document.getElementById('user-detail-title').textContent = `${uname} 的修炼记录`;
+  document.getElementById('user-detail-summary').innerHTML = '';
+  document.getElementById('user-detail-list').innerHTML = '<div class="empty-state"><p>加载中...</p></div>';
+  modal.style.display = 'flex';
+
+  try {
+    const data = await api(`/api/user-detail?username=${encodeURIComponent(uname)}&range=${currentLbRange}&date=${getToday()}`);
+    const days = data.days;
+
+    if (days.length === 0) {
+      document.getElementById('user-detail-summary').innerHTML = '';
+      document.getElementById('user-detail-list').innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>该时段暂无记录</p></div>';
+      return;
+    }
+
+    // Calculate summary
+    let totalScore = 0, totalMed = 0, totalThoughts = 0;
+    days.forEach(d => {
+      totalScore += d.totalScore;
+      totalMed += d.meditationMinutes;
+      totalThoughts += d.thoughtCount;
+    });
+    const avgScore = Math.round(totalScore / days.length * 10) / 10;
+
+    document.getElementById('user-detail-summary').innerHTML = `
+      <div class="ud-stat"><span class="ud-stat-value">${avgScore}</span><span class="ud-stat-label">平均分</span></div>
+      <div class="ud-stat"><span class="ud-stat-value">${days.length}</span><span class="ud-stat-label">记录天数</span></div>
+      <div class="ud-stat"><span class="ud-stat-value">${totalMed}</span><span class="ud-stat-label">总打坐(分)</span></div>
+      <div class="ud-stat"><span class="ud-stat-value">${totalThoughts}</span><span class="ud-stat-label">凡心次数</span></div>
+    `;
+
+    const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+    document.getElementById('user-detail-list').innerHTML = days.map(d => {
+      const dt = new Date(d.date);
+      const dateLabel = `${dt.getMonth() + 1}/${dt.getDate()} 周${weekDays[dt.getDay()]}`;
+      const remarks = [];
+      if (d.wakeRemark) remarks.push(`起床备注：${escHtml(d.wakeRemark)}`);
+      if (d.sleepRemark) remarks.push(`睡觉备注：${escHtml(d.sleepRemark)}`);
+
+      return `
+        <div class="ud-day-card">
+          <div class="ud-day-header">
+            <span class="ud-day-date">${dateLabel}</span>
+            <span class="ud-day-total">${d.totalScore}分</span>
+          </div>
+          <div class="ud-day-details">
+            <div class="ud-detail-item"><span class="ud-icon">🧘</span>打坐 <span class="ud-val">${d.meditationMinutes}分钟(${d.meditationScore}分)</span></div>
+            <div class="ud-detail-item"><span class="ud-icon">💭</span>凡心 <span class="ud-val">${d.thoughtCount}次</span></div>
+            <div class="ud-detail-item"><span class="ud-icon">☀️</span>起床 <span class="ud-val">${d.wakeTime || '未记录'}(${d.wakeScore}分)</span></div>
+            <div class="ud-detail-item"><span class="ud-icon">🌙</span>睡觉 <span class="ud-val">${d.sleepTime || '未记录'}(${d.sleepScore}分)</span></div>
+          </div>
+          ${remarks.length > 0 ? `<div class="ud-day-remark">${remarks.join('<br>')}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    document.getElementById('user-detail-list').innerHTML = '<div class="empty-state"><p>加载失败</p></div>';
+  }
+}
+
+function closeUserDetail() {
+  document.getElementById('user-detail-modal').style.display = 'none';
 }
 
 // ============== Utility ==============
@@ -597,6 +663,10 @@ document.addEventListener('DOMContentLoaded', () => {
       loadLeaderboard(tab.dataset.range);
     });
   });
+
+  // User detail modal close
+  document.getElementById('user-detail-close').addEventListener('click', closeUserDetail);
+  document.getElementById('user-detail-overlay').addEventListener('click', closeUserDetail);
 
   // Auto login if token exists
   if (token && username) {

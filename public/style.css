@@ -891,6 +891,143 @@ input, textarea, select, button {
   font-size: 13px;
 }
 
+/* ============== User Detail Modal ============== */
+.user-detail-content {
+  max-width: 420px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.user-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--glass-border);
+  flex-shrink: 0;
+}
+
+.user-detail-header h3 {
+  font-size: 17px;
+  font-weight: 600;
+  background: var(--gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+}
+
+.user-detail-summary {
+  padding: 12px 18px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(120, 100, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.ud-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 60px;
+}
+
+.ud-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent-light);
+}
+
+.ud-stat-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.user-detail-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px 16px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ud-day-card {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(120, 100, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.ud-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.ud-day-date {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.ud-day-total {
+  font-size: 16px;
+  font-weight: 700;
+  background: var(--gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ud-day-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.ud-detail-item {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ud-detail-item .ud-icon {
+  flex-shrink: 0;
+}
+
+.ud-detail-item .ud-val {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.ud-day-remark {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding-top: 6px;
+  border-top: 1px solid rgba(120, 100, 255, 0.06);
+  line-height: 1.5;
+}
+
+/* Make leaderboard items clickable */
+.lb-item {
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.lb-item:active {
+  background: rgba(124, 108, 240, 0.08);
+}
+
 /* ============== Desktop ============== */
 @media (min-width: 768px) {
   .page-container {
