@@ -72,6 +72,18 @@ async function initDb() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS insight_comments (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      insight_id INT NOT NULL,
+      user_id INT NOT NULL,
+      content TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (insight_id) REFERENCES insights(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
   console.log('MySQL 数据库表初始化完成');
 }
 

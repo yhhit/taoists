@@ -693,8 +693,9 @@ function renderInsights() {
     list.innerHTML = insightsItems.map(item => {
       const initial = item.username.charAt(0).toUpperCase();
       const isOwn = item.username === username;
+      const commentCount = item.comment_count || 0;
       return `
-        <div class="insight-card">
+        <div class="insight-card" id="insight-${item.id}">
           <div class="insight-card-header">
             <div class="insight-avatar">${initial}</div>
             <div class="insight-meta">
@@ -703,7 +704,19 @@ function renderInsights() {
             </div>
           </div>
           <div class="insight-body">${escHtml(item.content)}</div>
-          ${isOwn ? `<div class="insight-card-footer"><button class="insight-delete" onclick="deleteInsight(${item.id})">删除</button></div>` : ''}
+          <div class="insight-card-footer">
+            <button class="insight-action-btn" onclick="toggleComments(${item.id})">
+              💬 ${commentCount > 0 ? commentCount : ''}评论
+            </button>
+            ${isOwn ? `<button class="insight-delete" onclick="deleteInsight(${item.id})">删除</button>` : ''}
+          </div>
+          <div class="insight-comments-section" id="comments-section-${item.id}" style="display:none;">
+            <div class="insight-comments-list" id="comments-list-${item.id}"></div>
+            <div class="insight-comment-input">
+              <input type="text" id="comment-input-${item.id}" placeholder="写评论..." maxlength="500">
+              <button class="insight-comment-submit" onclick="addComment(${item.id})">发送</button>
+            </div>
+          </div>
         </div>
       `;
     }).join('');
@@ -715,6 +728,82 @@ function renderInsights() {
     loadMoreWrap.style.display = 'block';
   } else {
     loadMoreWrap.style.display = 'none';
+  }
+}
+
+async function toggleComments(insightId) {
+  const section = document.getElementById(`comments-section-${insightId}`);
+  if (section.style.display === 'none') {
+    section.style.display = 'block';
+    await loadComments(insightId);
+    // Focus input
+    document.getElementById(`comment-input-${insightId}`).focus();
+  } else {
+    section.style.display = 'none';
+  }
+}
+
+async function loadComments(insightId) {
+  const listEl = document.getElementById(`comments-list-${insightId}`);
+  try {
+    const comments = await api(`/api/insights/${insightId}/comments`);
+    if (comments.length === 0) {
+      listEl.innerHTML = '<div class="comment-empty">暂无评论</div>';
+    } else {
+      listEl.innerHTML = comments.map(c => {
+        const isOwn = c.username === username;
+        return `
+          <div class="comment-item">
+            <span class="comment-user">${escHtml(c.username)}</span>
+            <span class="comment-text">${escHtml(c.content)}</span>
+            <span class="comment-time">${formatInsightTime(c.created_at)}</span>
+            ${isOwn ? `<button class="comment-delete" onclick="deleteComment(${c.id}, ${insightId})">×</button>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+  } catch (err) {
+    listEl.innerHTML = '<div class="comment-empty">加载失败</div>';
+  }
+}
+
+async function addComment(insightId) {
+  const input = document.getElementById(`comment-input-${insightId}`);
+  const content = input.value.trim();
+  if (!content) {
+    showToast('请输入评论内容', 'error');
+    return;
+  }
+  try {
+    await api(`/api/insights/${insightId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ content })
+    });
+    input.value = '';
+    await loadComments(insightId);
+    // Update comment count in footer button
+    const btn = document.querySelector(`#insight-${insightId} .insight-action-btn`);
+    if (btn) {
+      const comments = await api(`/api/insights/${insightId}/comments`);
+      btn.textContent = `💬 ${comments.length}评论`;
+    }
+  } catch (err) {
+    showToast(err.error || '评论失败', 'error');
+  }
+}
+
+async function deleteComment(commentId, insightId) {
+  try {
+    await api(`/api/insight-comments/${commentId}`, { method: 'DELETE' });
+    await loadComments(insightId);
+    // Update count
+    const btn = document.querySelector(`#insight-${insightId} .insight-action-btn`);
+    if (btn) {
+      const comments = await api(`/api/insights/${insightId}/comments`);
+      btn.textContent = `💬 ${comments.length > 0 ? comments.length : ''}评论`;
+    }
+  } catch (err) {
+    showToast('删除失败', 'error');
   }
 }
 
@@ -798,6 +887,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-add-insight').addEventListener('click', addInsight);
   document.getElementById('btn-load-more-insights').addEventListener('click', () => {
     loadInsights(insightsCurrentPage + 1);
+  });
+
+  // Comment input Enter key (event delegation for dynamic inputs)
+  document.getElementById('insights-list').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.id && e.target.id.startsWith('comment-input-')) {
+      e.preventDefault();
+      const insightId = parseInt(e.target.id.replace('comment-input-', ''));
+      addComment(insightId);
+    }
   });
 
   // User detail modal close

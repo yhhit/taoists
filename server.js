@@ -387,7 +387,8 @@ app.get('/api/insights', authMiddleware, async (req, res) => {
   const offset = (page - 1) * limit;
 
   const rows = await query(
-    `SELECT i.id, i.content, i.created_at, i.user_id, u.username
+    `SELECT i.id, i.content, i.created_at, i.user_id, u.username,
+            (SELECT COUNT(*) FROM insight_comments WHERE insight_id = i.id) as comment_count
      FROM insights i JOIN users u ON i.user_id = u.id
      ORDER BY i.created_at DESC LIMIT ? OFFSET ?`,
     [limit, offset]
@@ -408,6 +409,35 @@ app.post('/api/insights', authMiddleware, async (req, res) => {
 
 app.delete('/api/insights/:id', authMiddleware, async (req, res) => {
   await execute('DELETE FROM insights WHERE id = ? AND user_id = ?', [parseInt(req.params.id), req.user.id]);
+  res.json({ ok: true });
+});
+
+// ============== Insight Comments ==============
+app.get('/api/insights/:id/comments', authMiddleware, async (req, res) => {
+  const insightId = parseInt(req.params.id);
+  const rows = await query(
+    `SELECT c.id, c.content, c.created_at, c.user_id, u.username
+     FROM insight_comments c JOIN users u ON c.user_id = u.id
+     WHERE c.insight_id = ?
+     ORDER BY c.created_at ASC`,
+    [insightId]
+  );
+  res.json(rows);
+});
+
+app.post('/api/insights/:id/comments', authMiddleware, async (req, res) => {
+  const insightId = parseInt(req.params.id);
+  const { content } = req.body;
+  if (!content || !content.trim()) return res.status(400).json({ error: '评论内容不能为空' });
+  const result = await execute(
+    'INSERT INTO insight_comments (insight_id, user_id, content) VALUES (?, ?, ?)',
+    [insightId, req.user.id, content.trim()]
+  );
+  res.json({ id: result.insertId });
+});
+
+app.delete('/api/insight-comments/:id', authMiddleware, async (req, res) => {
+  await execute('DELETE FROM insight_comments WHERE id = ? AND user_id = ?', [parseInt(req.params.id), req.user.id]);
   res.json({ ok: true });
 });
 

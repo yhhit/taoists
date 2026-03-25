@@ -1162,6 +1162,134 @@ input, textarea, select, button {
   display: inline-block;
 }
 
+/* ============== Insight Comments ============== */
+.insight-action-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: var(--transition);
+}
+
+.insight-action-btn:active {
+  color: var(--accent-light);
+  background: rgba(124, 108, 240, 0.1);
+}
+
+.insight-comments-section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(120, 100, 255, 0.1);
+}
+
+.insight-comments-list {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 8px;
+}
+
+.comment-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 6px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  flex-wrap: wrap;
+}
+
+.comment-user {
+  color: var(--accent-light);
+  font-weight: 600;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.comment-text {
+  color: var(--text-secondary);
+  word-break: break-word;
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-time {
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.comment-delete {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+
+.comment-delete:active {
+  color: var(--danger);
+}
+
+.comment-empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 8px 0;
+  text-align: center;
+}
+
+.insight-comment-input {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.insight-comment-input input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(120, 100, 255, 0.1);
+  border-radius: 20px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: var(--transition);
+}
+
+.insight-comment-input input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.insight-comment-input input::placeholder {
+  color: var(--text-muted);
+}
+
+.insight-comment-submit {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 20px;
+  background: var(--gradient-2);
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+
+.insight-comment-submit:active {
+  transform: scale(0.95);
+  opacity: 0.9;
+}
+
 /* ============== Desktop ============== */
 @media (min-width: 768px) {
   .page-container {
