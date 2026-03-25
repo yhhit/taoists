@@ -141,6 +141,9 @@ function switchPage(page) {
     case 'leaderboard':
       loadLeaderboard();
       break;
+    case 'insights':
+      loadInsights(1);
+      break;
   }
 }
 
@@ -642,6 +645,106 @@ function closeUserDetail() {
   document.getElementById('user-detail-modal').style.display = 'none';
 }
 
+// ============== Insights Plaza ==============
+let insightsCurrentPage = 1;
+let insightsTotalPages = 1;
+let insightsItems = [];
+
+function formatInsightTime(dateStr) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - d;
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return '刚刚';
+  if (diffMin < 60) return `${diffMin}分钟前`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour}小时前`;
+  const diffDay = Math.floor(diffHour / 24);
+  if (diffDay < 30) return `${diffDay}天前`;
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+async function loadInsights(page) {
+  if (page === 1) {
+    insightsItems = [];
+  }
+  try {
+    const data = await api(`/api/insights?page=${page}`);
+    insightsCurrentPage = data.page;
+    insightsTotalPages = data.pages;
+
+    if (page === 1) {
+      insightsItems = data.items;
+    } else {
+      insightsItems = insightsItems.concat(data.items);
+    }
+
+    renderInsights();
+  } catch (err) {
+    if (err.error === '未登录' || err.error === '登录已过期') logout();
+  }
+}
+
+function renderInsights() {
+  const list = document.getElementById('insights-list');
+  if (insightsItems.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">💡</div><p>还没有感悟，来分享第一条吧！</p></div>';
+  } else {
+    list.innerHTML = insightsItems.map(item => {
+      const initial = item.username.charAt(0).toUpperCase();
+      const isOwn = item.username === username;
+      return `
+        <div class="insight-card">
+          <div class="insight-card-header">
+            <div class="insight-avatar">${initial}</div>
+            <div class="insight-meta">
+              <div class="insight-username">${escHtml(item.username)}</div>
+              <div class="insight-time">${formatInsightTime(item.created_at)}</div>
+            </div>
+          </div>
+          <div class="insight-body">${escHtml(item.content)}</div>
+          ${isOwn ? `<div class="insight-card-footer"><button class="insight-delete" onclick="deleteInsight(${item.id})">删除</button></div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Load more button
+  const loadMoreWrap = document.getElementById('insights-load-more');
+  if (insightsCurrentPage < insightsTotalPages) {
+    loadMoreWrap.style.display = 'block';
+  } else {
+    loadMoreWrap.style.display = 'none';
+  }
+}
+
+async function addInsight() {
+  const content = document.getElementById('insight-content').value.trim();
+  if (!content) {
+    showToast('请输入感悟内容', 'error');
+    return;
+  }
+  try {
+    await api('/api/insights', { method: 'POST', body: JSON.stringify({ content }) });
+    showToast('感悟已发布 💡');
+    document.getElementById('insight-content').value = '';
+    loadInsights(1);
+  } catch (err) {
+    showToast(err.error || '发布失败', 'error');
+  }
+}
+
+async function deleteInsight(id) {
+  if (!confirm('确定删除这条感悟？')) return;
+  try {
+    await api(`/api/insights/${id}`, { method: 'DELETE' });
+    showToast('已删除');
+    loadInsights(1);
+  } catch (err) {
+    showToast('删除失败', 'error');
+  }
+}
+
 // ============== Utility ==============
 function escHtml(str) {
   if (!str) return '';
@@ -689,6 +792,12 @@ document.addEventListener('DOMContentLoaded', () => {
       tab.classList.add('active');
       loadLeaderboard(tab.dataset.range);
     });
+  });
+
+  // Insights
+  document.getElementById('btn-add-insight').addEventListener('click', addInsight);
+  document.getElementById('btn-load-more-insights').addEventListener('click', () => {
+    loadInsights(insightsCurrentPage + 1);
   });
 
   // User detail modal close

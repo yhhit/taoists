@@ -238,6 +238,22 @@
         </div>
         <div class="leaderboard-list glass-card" id="lb-list"></div>
       </div>
+
+      <!-- INSIGHTS PLAZA PAGE -->
+      <div id="page-insights" class="page">
+        <h2 class="page-title">💡 感悟广场</h2>
+        <div class="form-card glass-card">
+          <div class="input-group">
+            <label>分享你的修炼感悟</label>
+            <textarea id="insight-content" rows="3" placeholder="写下你的修行体悟、心得感想..."></textarea>
+          </div>
+          <button class="btn-primary" id="btn-add-insight">发布感悟</button>
+        </div>
+        <div class="insights-list" id="insights-list"></div>
+        <div class="load-more-wrap" id="insights-load-more" style="display:none;">
+          <button class="btn-secondary" id="btn-load-more-insights">加载更多</button>
+        </div>
+      </div>
     </main>
 
     <!-- Bottom Navigation -->
@@ -261,6 +277,10 @@
       <button class="nav-item" data-page="leaderboard">
         <span class="nav-icon">🏆</span>
         <span class="nav-label">排行</span>
+      </button>
+      <button class="nav-item" data-page="insights">
+        <span class="nav-icon">💡</span>
+        <span class="nav-label">感悟</span>
       </button>
     </nav>
   </div>

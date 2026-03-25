@@ -380,6 +380,37 @@ app.get('/api/user-detail', authMiddleware, async (req, res) => {
   });
 });
 
+// ============== Insights Plaza ==============
+app.get('/api/insights', authMiddleware, async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const limit = 20;
+  const offset = (page - 1) * limit;
+
+  const rows = await query(
+    `SELECT i.id, i.content, i.created_at, i.user_id, u.username
+     FROM insights i JOIN users u ON i.user_id = u.id
+     ORDER BY i.created_at DESC LIMIT ? OFFSET ?`,
+    [limit, offset]
+  );
+
+  const countRows = await query('SELECT COUNT(*) as total FROM insights');
+  const total = countRows[0].total;
+
+  res.json({ items: rows, total, page, pages: Math.ceil(total / limit) });
+});
+
+app.post('/api/insights', authMiddleware, async (req, res) => {
+  const { content } = req.body;
+  if (!content || !content.trim()) return res.status(400).json({ error: '感悟内容不能为空' });
+  const result = await execute('INSERT INTO insights (user_id, content) VALUES (?, ?)', [req.user.id, content.trim()]);
+  res.json({ id: result.insertId });
+});
+
+app.delete('/api/insights/:id', authMiddleware, async (req, res) => {
+  await execute('DELETE FROM insights WHERE id = ? AND user_id = ?', [parseInt(req.params.id), req.user.id]);
+  res.json({ ok: true });
+});
+
 // ============== Warning Check ==============
 app.get('/api/warnings', authMiddleware, async (req, res) => {
   const today = req.query.date || new Date(new Date().getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
