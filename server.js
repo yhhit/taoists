@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
-const { getDb, prepare, saveDb } = require('./db');
+const { initDb, query, execute } = require('./db');
 
 const app = express();
 const PORT = 9192;
@@ -24,23 +24,24 @@ function authMiddleware(req, res, next) {
 }
 
 // ============== Auth Routes ==============
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: '用户名和密码不能为空' });
   if (password.length < 3) return res.status(400).json({ error: '密码至少3个字符' });
 
-  const existing = prepare('SELECT id FROM users WHERE username = ?').get(username);
-  if (existing) return res.status(400).json({ error: '用户名已存在' });
+  const existing = await query('SELECT id FROM users WHERE username = ?', [username]);
+  if (existing.length > 0) return res.status(400).json({ error: '用户名已存在' });
 
   const hash = bcrypt.hashSync(password, 10);
-  const result = prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)').run(username, hash);
-  const token = jwt.sign({ id: result.lastInsertRowid, username }, JWT_SECRET, { expiresIn: '30d' });
+  const result = await execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', [username, hash]);
+  const token = jwt.sign({ id: result.insertId, username }, JWT_SECRET, { expiresIn: '30d' });
   res.json({ token, username });
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
-  const user = prepare('SELECT * FROM users WHERE username = ?').get(username);
+  const rows = await query('SELECT * FROM users WHERE username = ?', [username]);
+  const user = rows[0];
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {
     return res.status(400).json({ error: '用户名或密码错误' });
   }
@@ -49,66 +50,66 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 // ============== Meditation Routes ==============
-app.get('/api/meditations', authMiddleware, (req, res) => {
+app.get('/api/meditations', authMiddleware, async (req, res) => {
   const { date } = req.query;
   let rows;
   if (date) {
-    rows = prepare('SELECT * FROM meditations WHERE user_id = ? AND date = ? ORDER BY created_at DESC').all(req.user.id, date);
+    rows = await query('SELECT * FROM meditations WHERE user_id = ? AND date = ? ORDER BY created_at DESC', [req.user.id, date]);
   } else {
-    rows = prepare('SELECT * FROM meditations WHERE user_id = ? ORDER BY date DESC, created_at DESC LIMIT 100').all(req.user.id);
+    rows = await query('SELECT * FROM meditations WHERE user_id = ? ORDER BY date DESC, created_at DESC LIMIT 100', [req.user.id]);
   }
   res.json(rows);
 });
 
-app.post('/api/meditations', authMiddleware, (req, res) => {
+app.post('/api/meditations', authMiddleware, async (req, res) => {
   const { date, duration_minutes, notes } = req.body;
   if (!date || !duration_minutes) return res.status(400).json({ error: '日期和时长不能为空' });
-  const result = prepare('INSERT INTO meditations (user_id, date, duration_minutes, notes) VALUES (?, ?, ?, ?)').run(req.user.id, date, duration_minutes, notes || null);
-  res.json({ id: result.lastInsertRowid });
+  const result = await execute('INSERT INTO meditations (user_id, date, duration_minutes, notes) VALUES (?, ?, ?, ?)', [req.user.id, date, duration_minutes, notes || null]);
+  res.json({ id: result.insertId });
 });
 
-app.delete('/api/meditations/:id', authMiddleware, (req, res) => {
-  prepare('DELETE FROM meditations WHERE id = ? AND user_id = ?').run(parseInt(req.params.id), req.user.id);
+app.delete('/api/meditations/:id', authMiddleware, async (req, res) => {
+  await execute('DELETE FROM meditations WHERE id = ? AND user_id = ?', [parseInt(req.params.id), req.user.id]);
   res.json({ ok: true });
 });
 
 // ============== Worldly Thoughts Routes ==============
-app.get('/api/thoughts', authMiddleware, (req, res) => {
+app.get('/api/thoughts', authMiddleware, async (req, res) => {
   const { date } = req.query;
   let rows;
   if (date) {
-    rows = prepare('SELECT * FROM worldly_thoughts WHERE user_id = ? AND date = ? ORDER BY created_at DESC').all(req.user.id, date);
+    rows = await query('SELECT * FROM worldly_thoughts WHERE user_id = ? AND date = ? ORDER BY created_at DESC', [req.user.id, date]);
   } else {
-    rows = prepare('SELECT * FROM worldly_thoughts WHERE user_id = ? ORDER BY date DESC, created_at DESC LIMIT 100').all(req.user.id);
+    rows = await query('SELECT * FROM worldly_thoughts WHERE user_id = ? ORDER BY date DESC, created_at DESC LIMIT 100', [req.user.id]);
   }
   res.json(rows);
 });
 
-app.post('/api/thoughts', authMiddleware, (req, res) => {
+app.post('/api/thoughts', authMiddleware, async (req, res) => {
   const { date, cause, content, trajectory } = req.body;
   if (!date || !cause || !content) return res.status(400).json({ error: '日期、原因和内容不能为空' });
-  const result = prepare('INSERT INTO worldly_thoughts (user_id, date, cause, content, trajectory) VALUES (?, ?, ?, ?, ?)').run(req.user.id, date, cause, content, trajectory || null);
-  res.json({ id: result.lastInsertRowid });
+  const result = await execute('INSERT INTO worldly_thoughts (user_id, date, cause, content, trajectory) VALUES (?, ?, ?, ?, ?)', [req.user.id, date, cause, content, trajectory || null]);
+  res.json({ id: result.insertId });
 });
 
-app.delete('/api/thoughts/:id', authMiddleware, (req, res) => {
-  prepare('DELETE FROM worldly_thoughts WHERE id = ? AND user_id = ?').run(parseInt(req.params.id), req.user.id);
+app.delete('/api/thoughts/:id', authMiddleware, async (req, res) => {
+  await execute('DELETE FROM worldly_thoughts WHERE id = ? AND user_id = ?', [parseInt(req.params.id), req.user.id]);
   res.json({ ok: true });
 });
 
 // ============== Schedule Routes ==============
-app.get('/api/schedules', authMiddleware, (req, res) => {
+app.get('/api/schedules', authMiddleware, async (req, res) => {
   const { date } = req.query;
   let rows;
   if (date) {
-    rows = prepare('SELECT * FROM schedules WHERE user_id = ? AND date = ? ORDER BY created_at DESC').all(req.user.id, date);
+    rows = await query('SELECT * FROM schedules WHERE user_id = ? AND date = ? ORDER BY created_at DESC', [req.user.id, date]);
   } else {
-    rows = prepare('SELECT * FROM schedules WHERE user_id = ? ORDER BY date DESC LIMIT 100').all(req.user.id);
+    rows = await query('SELECT * FROM schedules WHERE user_id = ? ORDER BY date DESC LIMIT 100', [req.user.id]);
   }
   res.json(rows);
 });
 
-app.post('/api/schedules', authMiddleware, (req, res) => {
+app.post('/api/schedules', authMiddleware, async (req, res) => {
   const { date, wake_time, sleep_time, wake_remark, sleep_remark } = req.body;
   if (!date) return res.status(400).json({ error: '日期不能为空' });
 
@@ -129,8 +130,8 @@ app.post('/api/schedules', authMiddleware, (req, res) => {
   }
 
   // Upsert: insert or update for the same date
-  const existing = prepare('SELECT id FROM schedules WHERE user_id = ? AND date = ?').get(req.user.id, date);
-  if (existing) {
+  const existing = await query('SELECT id FROM schedules WHERE user_id = ? AND date = ?', [req.user.id, date]);
+  if (existing.length > 0) {
     const updates = [];
     const params = [];
     if (wake_time !== undefined) { updates.push('wake_time = ?'); params.push(wake_time); }
@@ -138,13 +139,13 @@ app.post('/api/schedules', authMiddleware, (req, res) => {
     if (wake_remark !== undefined) { updates.push('wake_remark = ?'); params.push(wake_remark); }
     if (sleep_remark !== undefined) { updates.push('sleep_remark = ?'); params.push(sleep_remark); }
     if (updates.length > 0) {
-      params.push(existing.id, req.user.id);
-      prepare(`UPDATE schedules SET ${updates.join(', ')} WHERE id = ? AND user_id = ?`).run(...params);
+      params.push(existing[0].id, req.user.id);
+      await execute(`UPDATE schedules SET ${updates.join(', ')} WHERE id = ? AND user_id = ?`, params);
     }
-    res.json({ id: existing.id, updated: true });
+    res.json({ id: existing[0].id, updated: true });
   } else {
-    const result = prepare('INSERT INTO schedules (user_id, date, wake_time, sleep_time, wake_remark, sleep_remark) VALUES (?, ?, ?, ?, ?, ?)').run(req.user.id, date, wake_time || null, sleep_time || null, wake_remark || null, sleep_remark || null);
-    res.json({ id: result.lastInsertRowid });
+    const result = await execute('INSERT INTO schedules (user_id, date, wake_time, sleep_time, wake_remark, sleep_remark) VALUES (?, ?, ?, ?, ?, ?)', [req.user.id, date, wake_time || null, sleep_time || null, wake_remark || null, sleep_remark || null]);
+    res.json({ id: result.insertId });
   }
 });
 
@@ -201,41 +202,41 @@ function calcSleepScore(sleepTime) {
   return Math.round(score * 10) / 10;
 }
 
-function getDailyScore(userId, date) {
-  const medRow = prepare('SELECT COALESCE(SUM(duration_minutes), 0) as total FROM meditations WHERE user_id = ? AND date = ?').get(userId, date);
-  const meditationScore = calcMeditationScore(medRow.total);
+async function getDailyScore(userId, date) {
+  const medRows = await query('SELECT COALESCE(SUM(duration_minutes), 0) as total FROM meditations WHERE user_id = ? AND date = ?', [userId, date]);
+  const meditationScore = calcMeditationScore(medRows[0].total);
 
-  const schedule = prepare('SELECT * FROM schedules WHERE user_id = ? AND date = ?').get(userId, date);
+  const schedRows = await query('SELECT * FROM schedules WHERE user_id = ? AND date = ?', [userId, date]);
+  const schedule = schedRows[0] || null;
   const wakeScore = schedule ? calcWakeScore(schedule.wake_time) : 0;
   const sleepScore = schedule ? calcSleepScore(schedule.sleep_time) : 0;
 
-  const thoughtRow = prepare('SELECT COUNT(*) as count FROM worldly_thoughts WHERE user_id = ? AND date = ?').get(userId, date);
-
-  const medCount = prepare('SELECT COUNT(*) as count FROM meditations WHERE user_id = ? AND date = ?').get(userId, date);
+  const thoughtRows = await query('SELECT COUNT(*) as count FROM worldly_thoughts WHERE user_id = ? AND date = ?', [userId, date]);
+  const medCountRows = await query('SELECT COUNT(*) as count FROM meditations WHERE user_id = ? AND date = ?', [userId, date]);
 
   return {
     date,
-    meditationMinutes: medRow.total,
-    meditationCount: medCount.count,
+    meditationMinutes: medRows[0].total,
+    meditationCount: medCountRows[0].count,
     meditationScore,
     wakeScore,
     sleepScore,
     scheduleScore: Math.round((wakeScore + sleepScore) * 10) / 10,
     totalScore: Math.round((meditationScore + wakeScore + sleepScore) * 10) / 10,
-    thoughtCount: thoughtRow.count,
+    thoughtCount: thoughtRows[0].count,
     wakeTime: schedule?.wake_time || null,
     sleepTime: schedule?.sleep_time || null
   };
 }
 
-app.get('/api/scores', authMiddleware, (req, res) => {
+app.get('/api/scores', authMiddleware, async (req, res) => {
   const { date } = req.query;
   if (!date) return res.status(400).json({ error: '日期不能为空' });
-  res.json(getDailyScore(req.user.id, date));
+  res.json(await getDailyScore(req.user.id, date));
 });
 
 // ============== Leaderboard ==============
-app.get('/api/leaderboard', authMiddleware, (req, res) => {
+app.get('/api/leaderboard', authMiddleware, async (req, res) => {
   const { range } = req.query;
   const today = req.query.date || new Date(new Date().getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
@@ -264,8 +265,10 @@ app.get('/api/leaderboard', authMiddleware, (req, res) => {
       startDate = today;
   }
 
-  const users = prepare('SELECT id, username FROM users').all();
-  const leaderboard = users.map(user => {
+  const users = await query('SELECT id, username FROM users');
+  const leaderboard = [];
+
+  for (const user of users) {
     const dates = [];
     const d = new Date(startDate);
     const end = new Date(endDate);
@@ -277,38 +280,39 @@ app.get('/api/leaderboard', authMiddleware, (req, res) => {
     let totalScore = 0;
     let totalMeditation = 0;
     let totalThoughts = 0;
-    let daysCount = dates.length;
+    const daysCount = dates.length;
 
-    dates.forEach(date => {
-      const score = getDailyScore(user.id, date);
+    for (const date of dates) {
+      const score = await getDailyScore(user.id, date);
       totalScore += score.totalScore;
       totalMeditation += score.meditationMinutes;
       totalThoughts += score.thoughtCount;
-    });
+    }
 
-    return {
+    leaderboard.push({
       username: user.username,
       avgScore: daysCount > 0 ? Math.round(totalScore / daysCount * 10) / 10 : 0,
       totalScore: Math.round(totalScore * 10) / 10,
       totalMeditation,
       totalThoughts,
       daysCount
-    };
-  });
+    });
+  }
 
   leaderboard.sort((a, b) => b.avgScore - a.avgScore);
   res.json(leaderboard);
 });
 
 // ============== User Detail ==============
-app.get('/api/user-detail', authMiddleware, (req, res) => {
+app.get('/api/user-detail', authMiddleware, async (req, res) => {
   const { username, range } = req.query;
   const today = req.query.date || new Date(new Date().getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   if (!username) return res.status(400).json({ error: '用户名不能为空' });
 
-  const user = prepare('SELECT id, username FROM users WHERE username = ?').get(username);
-  if (!user) return res.status(404).json({ error: '用户不存在' });
+  const userRows = await query('SELECT id, username FROM users WHERE username = ?', [username]);
+  if (userRows.length === 0) return res.status(404).json({ error: '用户不存在' });
+  const user = userRows[0];
 
   let startDate, endDate;
   endDate = today;
@@ -343,41 +347,51 @@ app.get('/api/user-detail', authMiddleware, (req, res) => {
     d.setDate(d.getDate() + 1);
   }
 
-  const dailyDetails = dates.map(date => {
-    const score = getDailyScore(user.id, date);
-    // Get schedule remarks
-    const schedule = prepare('SELECT wake_remark, sleep_remark FROM schedules WHERE user_id = ? AND date = ?').get(user.id, date);
-    return {
+  const dailyDetails = [];
+  for (const date of dates) {
+    const score = await getDailyScore(user.id, date);
+    const meditations = await query('SELECT duration_minutes, notes FROM meditations WHERE user_id = ? AND date = ? ORDER BY created_at DESC', [user.id, date]);
+    const thoughts = await query('SELECT cause, content, trajectory FROM worldly_thoughts WHERE user_id = ? AND date = ? ORDER BY created_at DESC', [user.id, date]);
+    const schedRows = await query('SELECT wake_time, sleep_time, wake_remark, sleep_remark FROM schedules WHERE user_id = ? AND date = ?', [user.id, date]);
+    const schedule = schedRows[0] || null;
+    dailyDetails.push({
       ...score,
       wakeRemark: schedule?.wake_remark || null,
-      sleepRemark: schedule?.sleep_remark || null
-    };
-  });
+      sleepRemark: schedule?.sleep_remark || null,
+      meditations,
+      thoughts
+    });
+  }
 
-  // Filter out days with zero activity (no score and no records)
-  const activeDays = dailyDetails.filter(d => d.totalScore > 0 || d.meditationMinutes > 0 || d.thoughtCount > 0);
+  // For day range, show all days; for other ranges, filter empty days
+  let resultDays;
+  if (!range || range === 'day') {
+    resultDays = dailyDetails;
+  } else {
+    resultDays = dailyDetails.filter(d => d.totalScore > 0 || d.meditationMinutes > 0 || d.thoughtCount > 0 || d.wakeTime || d.sleepTime);
+  }
 
   res.json({
     username: user.username,
     range,
     startDate,
     endDate,
-    days: activeDays.reverse() // Most recent first
+    days: resultDays.reverse()
   });
 });
 
 // ============== Warning Check ==============
-app.get('/api/warnings', authMiddleware, (req, res) => {
+app.get('/api/warnings', authMiddleware, async (req, res) => {
   const today = req.query.date || new Date(new Date().getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const userId = req.user.id;
 
   const warnings = [];
 
-  const medCount = prepare('SELECT COUNT(*) as c FROM meditations WHERE user_id = ? AND date = ?').get(userId, today);
-  if (medCount.c === 0) warnings.push({ type: 'meditation', message: '今日尚未记录打坐' });
+  const medCount = await query('SELECT COUNT(*) as c FROM meditations WHERE user_id = ? AND date = ?', [userId, today]);
+  if (medCount[0].c === 0) warnings.push({ type: 'meditation', message: '今日尚未记录打坐' });
 
-  const scheduleCount = prepare('SELECT COUNT(*) as c FROM schedules WHERE user_id = ? AND date = ?').get(userId, today);
-  if (scheduleCount.c === 0) warnings.push({ type: 'schedule', message: '今日尚未记录作息' });
+  const schedCount = await query('SELECT COUNT(*) as c FROM schedules WHERE user_id = ? AND date = ?', [userId, today]);
+  if (schedCount[0].c === 0) warnings.push({ type: 'schedule', message: '今日尚未记录作息' });
 
   res.json({ date: today, warnings, hasWarnings: warnings.length > 0 });
 });
@@ -389,7 +403,7 @@ app.get('*', (req, res) => {
 
 // ============== Start Server ==============
 async function start() {
-  await getDb();
+  await initDb();
   app.listen(PORT, () => {
     console.log(`修炼记录系统运行在 http://localhost:${PORT}`);
   });

@@ -1018,6 +1018,45 @@ input, textarea, select, button {
   line-height: 1.5;
 }
 
+.ud-section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(120, 100, 255, 0.06);
+}
+
+.ud-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-light);
+  margin-bottom: 4px;
+}
+
+.ud-record-item {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 4px 0 4px 8px;
+  border-left: 2px solid rgba(120, 100, 255, 0.15);
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+
+.ud-record-note {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.ud-record-label {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.ud-no-record {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 8px 0;
+}
+
 /* Make leaderboard items clickable */
 .lb-item {
   cursor: pointer;

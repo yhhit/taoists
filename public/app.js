@@ -586,9 +586,42 @@ async function showUserDetail(uname) {
     document.getElementById('user-detail-list').innerHTML = days.map(d => {
       const dt = new Date(d.date);
       const dateLabel = `${dt.getMonth() + 1}/${dt.getDate()} 周${weekDays[dt.getDay()]}`;
-      const remarks = [];
-      if (d.wakeRemark) remarks.push(`起床备注：${escHtml(d.wakeRemark)}`);
-      if (d.sleepRemark) remarks.push(`睡觉备注：${escHtml(d.sleepRemark)}`);
+
+      // Meditation records
+      let medHtml = '';
+      if (d.meditations && d.meditations.length > 0) {
+        medHtml = `<div class="ud-section">
+          <div class="ud-section-title">🧘 打坐记录 (${d.meditationScore}分)</div>
+          ${d.meditations.map(m => `<div class="ud-record-item">
+            <span class="ud-val">${m.duration_minutes}分钟</span>${m.notes ? ` <span class="ud-record-note">— ${escHtml(m.notes)}</span>` : ''}
+          </div>`).join('')}
+        </div>`;
+      }
+
+      // Schedule
+      let schedHtml = '';
+      if (d.wakeTime || d.sleepTime) {
+        schedHtml = `<div class="ud-section">
+          <div class="ud-section-title">⏰ 作息 (${d.wakeScore + d.sleepScore}分)</div>
+          ${d.wakeTime ? `<div class="ud-record-item">☀️ 起床 <span class="ud-val">${d.wakeTime}</span> (${d.wakeScore}分)${d.wakeRemark ? ` <span class="ud-record-note">— ${escHtml(d.wakeRemark)}</span>` : ''}</div>` : ''}
+          ${d.sleepTime ? `<div class="ud-record-item">🌙 睡觉 <span class="ud-val">${d.sleepTime}</span> (${d.sleepScore}分)${d.sleepRemark ? ` <span class="ud-record-note">— ${escHtml(d.sleepRemark)}</span>` : ''}</div>` : ''}
+        </div>`;
+      }
+
+      // Thoughts
+      let thoughtHtml = '';
+      if (d.thoughts && d.thoughts.length > 0) {
+        thoughtHtml = `<div class="ud-section">
+          <div class="ud-section-title">💭 凡俗心 (${d.thoughtCount}次)</div>
+          ${d.thoughts.map(t => `<div class="ud-record-item">
+            <div><span class="ud-record-label">原因：</span>${escHtml(t.cause)}</div>
+            <div><span class="ud-record-label">内容：</span>${escHtml(t.content)}</div>
+            ${t.trajectory ? `<div><span class="ud-record-label">轨迹：</span>${escHtml(t.trajectory)}</div>` : ''}
+          </div>`).join('')}
+        </div>`;
+      }
+
+      const hasRecords = medHtml || schedHtml || thoughtHtml;
 
       return `
         <div class="ud-day-card">
@@ -596,13 +629,7 @@ async function showUserDetail(uname) {
             <span class="ud-day-date">${dateLabel}</span>
             <span class="ud-day-total">${d.totalScore}分</span>
           </div>
-          <div class="ud-day-details">
-            <div class="ud-detail-item"><span class="ud-icon">🧘</span>打坐 <span class="ud-val">${d.meditationMinutes}分钟(${d.meditationScore}分)</span></div>
-            <div class="ud-detail-item"><span class="ud-icon">💭</span>凡心 <span class="ud-val">${d.thoughtCount}次</span></div>
-            <div class="ud-detail-item"><span class="ud-icon">☀️</span>起床 <span class="ud-val">${d.wakeTime || '未记录'}(${d.wakeScore}分)</span></div>
-            <div class="ud-detail-item"><span class="ud-icon">🌙</span>睡觉 <span class="ud-val">${d.sleepTime || '未记录'}(${d.sleepScore}分)</span></div>
-          </div>
-          ${remarks.length > 0 ? `<div class="ud-day-remark">${remarks.join('<br>')}</div>` : ''}
+          ${hasRecords ? `${medHtml}${schedHtml}${thoughtHtml}` : '<div class="ud-no-record">暂无记录</div>'}
         </div>
       `;
     }).join('');

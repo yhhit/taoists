@@ -1,125 +1,80 @@
-const initSqlJs = require('sql.js');
-const fs = require('fs');
-const path = require('path');
+const mysql = require('mysql2/promise');
 
-const DB_PATH = path.join(__dirname, 'xiulian.db');
+const pool = mysql.createPool({
+  host: '36.138.73.49',
+  port: 3377,
+  user: 'xiulian',
+  password: 'Xai8tbSKn8cEcYTn',
+  database: 'xiulian',
+  waitForConnections: true,
+  connectionLimit: 10,
+  charset: 'utf8mb4',
+  timezone: '+08:00'
+});
 
-let db = null;
-
-async function getDb() {
-  if (db) return db;
-
-  const SQL = await initSqlJs();
-
-  // Load existing database or create new one
-  if (fs.existsSync(DB_PATH)) {
-    const buffer = fs.readFileSync(DB_PATH);
-    db = new SQL.Database(buffer);
-  } else {
-    db = new SQL.Database();
-  }
-
-  // Create tables
-  db.run(`
+async function initDb() {
+  await pool.execute(`
     CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL,
-      created_at TEXT DEFAULT (datetime('now', 'localtime'))
-    )
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      username VARCHAR(100) UNIQUE NOT NULL,
+      password_hash VARCHAR(255) NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
-  db.run(`
+  await pool.execute(`
     CREATE TABLE IF NOT EXISTS meditations (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      date TEXT NOT NULL,
-      duration_minutes INTEGER NOT NULL,
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      date DATE NOT NULL,
+      duration_minutes INT NOT NULL,
       notes TEXT,
-      created_at TEXT DEFAULT (datetime('now', 'localtime')),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id)
-    )
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
-  db.run(`
+  await pool.execute(`
     CREATE TABLE IF NOT EXISTS worldly_thoughts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      date TEXT NOT NULL,
-      cause TEXT NOT NULL,
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      date DATE NOT NULL,
+      cause VARCHAR(500) NOT NULL,
       content TEXT NOT NULL,
       trajectory TEXT,
-      created_at TEXT DEFAULT (datetime('now', 'localtime')),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id)
-    )
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
-  db.run(`
+  await pool.execute(`
     CREATE TABLE IF NOT EXISTS schedules (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      date TEXT NOT NULL,
-      wake_time TEXT,
-      sleep_time TEXT,
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      date DATE NOT NULL,
+      wake_time VARCHAR(10),
+      sleep_time VARCHAR(10),
       wake_remark TEXT,
       sleep_remark TEXT,
-      created_at TEXT DEFAULT (datetime('now', 'localtime')),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY idx_user_date (user_id, date),
       FOREIGN KEY (user_id) REFERENCES users(id)
-    )
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
-  // Create unique index for schedules (user_id, date)
-  db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_schedules_user_date ON schedules(user_id, date)`);
-
-  saveDb();
-  return db;
+  console.log('MySQL 数据库表初始化完成');
 }
 
-function saveDb() {
-  if (!db) return;
-  const data = db.export();
-  const buffer = Buffer.from(data);
-  fs.writeFileSync(DB_PATH, buffer);
+// Helper: query returns rows array
+async function query(sql, params = []) {
+  const [rows] = await pool.execute(sql, params);
+  return rows;
 }
 
-// Helper functions to match better-sqlite3 API
-function prepare(sql) {
-  return {
-    run(...params) {
-      db.run(sql, params);
-      saveDb();
-      const lastId = db.exec("SELECT last_insert_rowid() as id")[0];
-      return { lastInsertRowid: lastId ? lastId.values[0][0] : 0 };
-    },
-    get(...params) {
-      const stmt = db.prepare(sql);
-      stmt.bind(params);
-      if (stmt.step()) {
-        const cols = stmt.getColumnNames();
-        const vals = stmt.get();
-        stmt.free();
-        const row = {};
-        cols.forEach((c, i) => row[c] = vals[i]);
-        return row;
-      }
-      stmt.free();
-      return null;
-    },
-    all(...params) {
-      const results = [];
-      const stmt = db.prepare(sql);
-      stmt.bind(params);
-      while (stmt.step()) {
-        const cols = stmt.getColumnNames();
-        const vals = stmt.get();
-        const row = {};
-        cols.forEach((c, i) => row[c] = vals[i]);
-        results.push(row);
-      }
-      stmt.free();
-      return results;
-    }
-  };
+// Helper: execute INSERT/UPDATE/DELETE, returns result with insertId, affectedRows
+async function execute(sql, params = []) {
+  const [result] = await pool.execute(sql, params);
+  return result;
 }
 
-module.exports = { getDb, saveDb, prepare };
+module.exports = { pool, initDb, query, execute };
