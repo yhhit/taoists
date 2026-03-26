@@ -1,8 +1,32 @@
-// ============== State ==============
 let token = localStorage.getItem('token');
 let username = localStorage.getItem('username');
 let currentDate = new Date();
 let currentPage = 'home';
+
+// ============== Theme ==============
+function initTheme() {
+  const saved = localStorage.getItem('theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  updateThemeIcon(saved);
+}
+
+function toggleTheme() {
+  document.documentElement.classList.add('theme-transitioning');
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  updateThemeIcon(next);
+  setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 500);
+}
+
+function updateThemeIcon(theme) {
+  const btn = document.getElementById('btn-theme');
+  if (btn) btn.textContent = theme === 'dark' ? '🌙' : '☀️';
+}
+
+// Apply theme immediately to prevent flash
+initTheme();
 
 // ============== API Helper ==============
 async function api(url, options = {}) {
@@ -845,6 +869,9 @@ function escHtml(str) {
 // ============== Event Bindings ==============
 document.addEventListener('DOMContentLoaded', () => {
   initAuth();
+
+  // Theme toggle
+  document.getElementById('btn-theme').addEventListener('click', toggleTheme);
 
   // Logout
   document.getElementById('btn-logout').addEventListener('click', logout);

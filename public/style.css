@@ -3,6 +3,9 @@
   --bg-primary: #0a0a1a;
   --bg-secondary: #111128;
   --bg-card: rgba(25, 25, 60, 0.6);
+  --bg-input: rgba(0, 0, 0, 0.3);
+  --bg-tab: rgba(0, 0, 0, 0.2);
+  --bg-hover: rgba(124, 108, 240, 0.08);
   --glass-border: rgba(120, 100, 255, 0.15);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   --text-primary: #e8e6f0;
@@ -20,6 +23,75 @@
   --radius-sm: 10px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --font: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Microsoft YaHei', sans-serif;
+  --body-glow-1: rgba(124, 108, 240, 0.08);
+  --body-glow-2: rgba(139, 92, 246, 0.06);
+  --overlay-bg: rgba(0, 0, 0, 0.6);
+  --score-bg-ring: rgba(124, 108, 240, 0.1);
+  --score-item-bg: rgba(0, 0, 0, 0.15);
+  --lb-border: rgba(120, 100, 255, 0.06);
+  --border-input: rgba(120, 100, 255, 0.1);
+  --warning-bg: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(245, 158, 11, 0.06));
+  --warning-border: rgba(251, 191, 36, 0.2);
+  --day-card-bg: rgba(0, 0, 0, 0.2);
+  --day-card-border: rgba(120, 100, 255, 0.08);
+}
+
+/* ============== Light Theme ============== */
+[data-theme="light"] {
+  --bg-primary: #f0eef6;
+  --bg-secondary: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-input: rgba(0, 0, 0, 0.04);
+  --bg-tab: rgba(0, 0, 0, 0.05);
+  --bg-hover: rgba(124, 108, 240, 0.06);
+  --glass-border: rgba(120, 100, 255, 0.18);
+  --glass-shadow: 0 4px 24px rgba(100, 80, 200, 0.08);
+  --text-primary: #1a1a2e;
+  --text-secondary: #5a5680;
+  --text-muted: #8a86a0;
+  --accent: #6c5ce7;
+  --accent-light: #7c6cf0;
+  --accent-glow: rgba(108, 92, 231, 0.2);
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --overlay-bg: rgba(0, 0, 0, 0.3);
+  --score-bg-ring: rgba(124, 108, 240, 0.12);
+  --score-item-bg: rgba(108, 92, 231, 0.05);
+  --lb-border: rgba(120, 100, 255, 0.1);
+  --border-input: rgba(120, 100, 255, 0.15);
+  --warning-bg: linear-gradient(135deg, rgba(251, 191, 36, 0.08), rgba(245, 158, 11, 0.04));
+  --warning-border: rgba(245, 158, 11, 0.2);
+  --body-glow-1: rgba(124, 108, 240, 0.04);
+  --body-glow-2: rgba(139, 92, 246, 0.03);
+  --day-card-bg: rgba(108, 92, 231, 0.03);
+  --day-card-border: rgba(120, 100, 255, 0.12);
+}
+
+/* ============== Theme Transition ============== */
+.theme-transitioning,
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+  transition: background-color 0.4s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+/* ============== Theme Toggle Button ============== */
+.btn-theme {
+  background: none;
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: var(--transition);
+  line-height: 1.2;
+}
+
+.btn-theme:active {
+  background: var(--accent-glow);
+  transform: scale(0.92);
 }
 
 /* ============== Reset ============== */
@@ -54,8 +126,8 @@ body::before {
   width: 100%;
   height: 100%;
   background:
-    radial-gradient(ellipse at 30% 20%, rgba(124, 108, 240, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 70% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
+    radial-gradient(ellipse at 30% 20%, var(--body-glow-1) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 80%, var(--body-glow-2) 0%, transparent 50%);
   z-index: 0;
   pointer-events: none;
 }
@@ -138,7 +210,7 @@ input, textarea, select, button {
 .auth-tabs {
   display: flex;
   margin-bottom: 20px;
-  background: rgba(0,0,0,0.2);
+  background: var(--bg-tab);
   border-radius: var(--radius-sm);
   padding: 3px;
 }
@@ -188,8 +260,8 @@ input, textarea, select, button {
 .input-group select {
   width: 100%;
   padding: 11px 14px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(120, 100, 255, 0.1);
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-size: 15px;
@@ -240,7 +312,7 @@ input, textarea, select, button {
   padding: 10px 20px;
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);
-  background: rgba(0,0,0,0.2);
+  background: var(--bg-tab);
   color: var(--text-secondary);
   font-size: 14px;
   cursor: pointer;
@@ -260,7 +332,7 @@ input, textarea, select, button {
 }
 
 .btn-icon:active {
-  background: rgba(124, 108, 240, 0.15);
+  background: var(--accent-glow);
 }
 
 .error-msg {
@@ -324,8 +396,8 @@ input, textarea, select, button {
 
 /* ============== Warning Banner ============== */
 .warning-banner {
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(245, 158, 11, 0.06));
-  border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+  background: var(--warning-bg);
+  border-bottom: 1px solid var(--warning-border);
   flex-shrink: 0;
 }
 
@@ -433,7 +505,7 @@ input, textarea, select, button {
 
 .score-bg-ring {
   fill: none;
-  stroke: rgba(124, 108, 240, 0.1);
+  stroke: var(--score-bg-ring);
   stroke-width: 8;
 }
 
@@ -494,7 +566,7 @@ input, textarea, select, button {
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  background: rgba(0,0,0,0.15);
+  background: var(--score-item-bg);
   border-radius: 8px;
 }
 
@@ -655,7 +727,7 @@ input, textarea, select, button {
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border-bottom: 1px solid rgba(120, 100, 255, 0.06);
+  border-bottom: 1px solid var(--lb-border);
 }
 
 .lb-item:last-child { border-bottom: none; }
@@ -788,7 +860,7 @@ input, textarea, select, button {
 .modal-overlay {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--overlay-bg);
 }
 
 .modal-content {
@@ -819,7 +891,7 @@ input, textarea, select, button {
 .modal-content textarea {
   width: 100%;
   padding: 10px;
-  background: rgba(0,0,0,0.3);
+  background: var(--bg-input);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
@@ -957,8 +1029,8 @@ input, textarea, select, button {
 }
 
 .ud-day-card {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(120, 100, 255, 0.08);
+  background: var(--day-card-bg);
+  border: 1px solid var(--day-card-border);
   border-radius: var(--radius-sm);
   padding: 12px;
   margin-bottom: 8px;
@@ -1064,7 +1136,7 @@ input, textarea, select, button {
 }
 
 .lb-item:active {
-  background: rgba(124, 108, 240, 0.08);
+  background: var(--bg-hover);
 }
 
 /* ============== Insights Plaza ============== */
@@ -1254,8 +1326,8 @@ input, textarea, select, button {
   flex: 1;
   min-width: 0;
   padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(120, 100, 255, 0.1);
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
   border-radius: 20px;
   color: var(--text-primary);
   font-size: 13px;
